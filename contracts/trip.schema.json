@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TrackPulse Trip",
+  "description": "One logistics vehicle trip from origin to destination.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "trip_id",
+    "vehicle_id",
+    "driver_id",
+    "shipment_id",
+    "route_id",
+    "planned_start",
+    "planned_end",
+    "trip_status"
+  ],
+  "properties": {
+    "trip_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "vehicle_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "driver_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "shipment_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "route_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "planned_start": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "planned_end": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "actual_start": {
+      "type": ["string", "null"],
+      "format": "date-time"
+    },
+    "actual_end": {
+      "type": ["string", "null"],
+      "format": "date-time"
+    },
+    "origin": {
+      "type": "string",
+      "minLength": 1
+    },
+    "destination": {
+      "type": "string",
+      "minLength": 1
+    },
+    "trip_status": {
+      "type": "string",
+      "enum": [
+        "planned",
+        "in_progress",
+        "completed",
+        "cancelled"
+      ]
+    },
+    "distance_km": {
+      "type": ["number", "null"],
+      "minimum": 0
+    },
+    "fuel_used_liters": {
+      "type": ["number", "null"],
+      "minimum": 0
+    }
+  }
+}

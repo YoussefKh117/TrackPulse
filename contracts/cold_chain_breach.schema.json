@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TrackPulse Cold-chain Breach",
+  "description": "One continuous episode where cargo temperature exceeds its allowed range.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "breach_id",
+    "shipment_id",
+    "trip_id",
+    "vehicle_id",
+    "start_timestamp",
+    "end_timestamp",
+    "min_cargo_temp_c",
+    "max_cargo_temp_c",
+    "allowed_min_temp_c",
+    "allowed_max_temp_c",
+    "duration_minutes",
+    "severity",
+    "resolved_flag"
+  ],
+  "properties": {
+    "breach_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "shipment_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "trip_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "vehicle_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "start_timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "end_timestamp": {
+      "type": ["string", "null"],
+      "format": "date-time"
+    },
+    "min_cargo_temp_c": {
+      "type": "number"
+    },
+    "max_cargo_temp_c": {
+      "type": "number"
+    },
+    "allowed_min_temp_c": {
+      "type": "number"
+    },
+    "allowed_max_temp_c": {
+      "type": "number"
+    },
+    "duration_minutes": {
+      "type": "number",
+      "minimum": 0
+    },
+    "severity": {
+      "type": "string",
+      "enum": ["low", "medium", "high"]
+    },
+    "resolved_flag": {
+      "type": "boolean"
+    }
+  }
+}

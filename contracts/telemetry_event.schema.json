@@ -1,0 +1,81 @@
+﻿{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TrackPulse Vehicle Telemetry Event",
+  "description": "A single telemetry reading emitted by a logistics vehicle.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "event_id",
+    "event_timestamp",
+    "vehicle_id",
+    "latitude",
+    "longitude",
+    "speed_kph",
+    "odometer_km",
+    "rpm",
+    "fuel_rate_lph",
+    "engine_temp_c",
+    "ignition_on"
+  ],
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "description": "Unique identifier for this event."
+    },
+    "event_timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Event time in UTC using ISO 8601 format."
+    },
+    "vehicle_id": {
+      "type": "string"
+    },
+    "trip_id": {
+      "type": ["string", "null"]
+    },
+    "shipment_id": {
+      "type": ["string", "null"]
+    },
+    "driver_id": {
+      "type": ["string", "null"]
+    },
+    "route_id": {
+      "type": ["string", "null"]
+    },
+    "latitude": {
+      "type": "number",
+      "minimum": -90,
+      "maximum": 90
+    },
+    "longitude": {
+      "type": "number",
+      "minimum": -180,
+      "maximum": 180
+    },
+    "speed_kph": {
+      "type": "number",
+      "minimum": 0
+    },
+    "odometer_km": {
+      "type": "number",
+      "minimum": 0
+    },
+    "rpm": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "fuel_rate_lph": {
+      "type": "number",
+      "minimum": 0
+    },
+    "engine_temp_c": {
+      "type": "number"
+    },
+    "cargo_temp_c": {
+      "type": ["number", "null"]
+    },
+    "ignition_on": {
+      "type": "boolean"
+    }
+  }
+}
