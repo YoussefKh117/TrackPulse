@@ -1,0 +1,19 @@
+# Core data generation and validation
+jsonschema>=4.23,<5
+
+# Azure Event Hubs - Python producer
+azure-eventhub>=5.12,<6
+
+# Azure Storage - ADLS Gen2 access
+azure-storage-file-datalake>=12.18,<13
+azure-identity>=1.19,<2
+
+# Environment variables and local configuration
+python-dotenv>=1.0,<2
+
+# Data processing and file handling
+pandas>=2.2,<3
+pyarrow>=18,<25
+
+# Data quality and testing
+pytest>=8.3,<9
