@@ -1,0 +1,355 @@
+{
+  "status": "completed",
+  "config": {
+    "vehicles": 20,
+    "duration_hours": 2,
+    "interval_seconds": 30,
+    "events_per_vehicle": 240,
+    "total_events": 4800,
+    "chunk_size": 100,
+    "seed": 42,
+    "start_utc": "2026-10-25T01:25:28Z"
+  },
+  "config_fingerprint": "3c6b702b9e3a381cc344ca429bf5f29addbbf503c95cbf60dfecaf67c5dc102e",
+  "completed_chunks": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42,
+    43,
+    44,
+    45,
+    46,
+    47
+  ],
+  "completed_events": 4800,
+  "chunks": [
+    {
+      "index": 0,
+      "file": "telemetry_00000.jsonl",
+      "events": 100,
+      "sha256": "2d1727919446c64c5401f10e1c115289f5d1050c9ec7d5041f8ba971c9ce2266"
+    },
+    {
+      "index": 1,
+      "file": "telemetry_00001.jsonl",
+      "events": 100,
+      "sha256": "00247194e3e50fa516695df34e681435fe4b723d9ee9122c55b857acc364230d"
+    },
+    {
+      "index": 2,
+      "file": "telemetry_00002.jsonl",
+      "events": 100,
+      "sha256": "cf5c848cc565b2e5c521ff9b8055d8c20cbac7572352f2be1ac74da68642fae0"
+    },
+    {
+      "index": 3,
+      "file": "telemetry_00003.jsonl",
+      "events": 100,
+      "sha256": "015fd46ca7cf89adc3abe8a1542112f7db1e3341ed77a08a1574fb7e5bd28ca0"
+    },
+    {
+      "index": 4,
+      "file": "telemetry_00004.jsonl",
+      "events": 100,
+      "sha256": "dfd66039a68090280cf9d726d2cf3a7b9ad16631c407f123b1f8404978bf4e76"
+    },
+    {
+      "index": 5,
+      "file": "telemetry_00005.jsonl",
+      "events": 100,
+      "sha256": "e19cf78ca5fe75b18ea42e192b51fe07c13564f7f1986b7668fce208eb596406"
+    },
+    {
+      "index": 6,
+      "file": "telemetry_00006.jsonl",
+      "events": 100,
+      "sha256": "c14bbf1f170a74290bd942c31d1a26d1a5bcb5e7b98d459b50c420ff3b38f78a"
+    },
+    {
+      "index": 7,
+      "file": "telemetry_00007.jsonl",
+      "events": 100,
+      "sha256": "15a5d3fe793d2a1ec271183e66d5fd6f636f43d306d3739dc50347ab646056a5"
+    },
+    {
+      "index": 8,
+      "file": "telemetry_00008.jsonl",
+      "events": 100,
+      "sha256": "72db83e8456c78948f335ea1f12ddc79c8a1a305b62bc207f68605172954782f"
+    },
+    {
+      "index": 9,
+      "file": "telemetry_00009.jsonl",
+      "events": 100,
+      "sha256": "9693c570961139294f7422248bd76e6921f074f23913e9dde3d1879d8e80e1da"
+    },
+    {
+      "index": 10,
+      "file": "telemetry_00010.jsonl",
+      "events": 100,
+      "sha256": "beaee6c7eab51296ab9c4eaa0e97a31e8d0ffc808dad28361a357e7962758160"
+    },
+    {
+      "index": 11,
+      "file": "telemetry_00011.jsonl",
+      "events": 100,
+      "sha256": "94e60f85c7cf0bd3fdcbba82b5bb888b477723598d59e3e2b2e1df12712b135d"
+    },
+    {
+      "index": 12,
+      "file": "telemetry_00012.jsonl",
+      "events": 100,
+      "sha256": "e0b588ca68ecbe25165ae333b9b77e48fa2051323405faa2d5244a28c0be3bb0"
+    },
+    {
+      "index": 13,
+      "file": "telemetry_00013.jsonl",
+      "events": 100,
+      "sha256": "1e3ae45cfe2c6f51d01b01ef3bb5d5524a336ff8699d8759c5a10f8215915bf5"
+    },
+    {
+      "index": 14,
+      "file": "telemetry_00014.jsonl",
+      "events": 100,
+      "sha256": "1c8570b90672434dfd980dcf35d8cb39f31640829bef6a54773b935cd94b58cb"
+    },
+    {
+      "index": 15,
+      "file": "telemetry_00015.jsonl",
+      "events": 100,
+      "sha256": "e64eacd148c33c9a57816d658982b5ec168353ec77f1503f2fd28362893e1a35"
+    },
+    {
+      "index": 16,
+      "file": "telemetry_00016.jsonl",
+      "events": 100,
+      "sha256": "71e3b3ce1ae09270308d036297759254f98609fc5fa77aa5be08cd9876f9a097"
+    },
+    {
+      "index": 17,
+      "file": "telemetry_00017.jsonl",
+      "events": 100,
+      "sha256": "33f4a702fb798dde6581ebe137f69f601a7b2eb7ce48e183010192d68efb9703"
+    },
+    {
+      "index": 18,
+      "file": "telemetry_00018.jsonl",
+      "events": 100,
+      "sha256": "06c00744a1ef00437038640812dbf9e6faba2b40a2d48ca31fa4bea4aa0f05e8"
+    },
+    {
+      "index": 19,
+      "file": "telemetry_00019.jsonl",
+      "events": 100,
+      "sha256": "8a2dd65f4cc75fdb6cf1fd9293d2c8830ca9efcb7962c4b11b90d0a351dca5c6"
+    },
+    {
+      "index": 20,
+      "file": "telemetry_00020.jsonl",
+      "events": 100,
+      "sha256": "b7d1241e941dac61c30ff6fe5f3bd1a11d3f15c6a8a0b7b48b371127496ad427"
+    },
+    {
+      "index": 21,
+      "file": "telemetry_00021.jsonl",
+      "events": 100,
+      "sha256": "0a2976073174575b706b6d7563833528e35bd43f7ce86eebb091d703675c8851"
+    },
+    {
+      "index": 22,
+      "file": "telemetry_00022.jsonl",
+      "events": 100,
+      "sha256": "d4a9c4600d6c8da10a92302616f2a6063806131b1efac37212360454b237dd49"
+    },
+    {
+      "index": 23,
+      "file": "telemetry_00023.jsonl",
+      "events": 100,
+      "sha256": "e9b68117d4c6eded3e3397b04f43aa613ac4234153a31dd8e6e825c70900642c"
+    },
+    {
+      "index": 24,
+      "file": "telemetry_00024.jsonl",
+      "events": 100,
+      "sha256": "2e8de5d226c0d9f5465ff6085fa175e764b59343b8f465d74f4f72ec7d4b3388"
+    },
+    {
+      "index": 25,
+      "file": "telemetry_00025.jsonl",
+      "events": 100,
+      "sha256": "f36d5f0cbad711610d34e9f4646cfa0b9bd454e791455161ddfd706349751d21"
+    },
+    {
+      "index": 26,
+      "file": "telemetry_00026.jsonl",
+      "events": 100,
+      "sha256": "ba43ec2e5cd93de643e3d5f4edb43625e5492fda2716fd77d4b9978cb1cc2919"
+    },
+    {
+      "index": 27,
+      "file": "telemetry_00027.jsonl",
+      "events": 100,
+      "sha256": "3d4945629e27abc0ca3a56039a694b71535e18fbf049b90df488f1e6aadad5c1"
+    },
+    {
+      "index": 28,
+      "file": "telemetry_00028.jsonl",
+      "events": 100,
+      "sha256": "ccb38fff57308fd8966b2b821be646d5257476c85b4dccdb26c9f45185a7fd99"
+    },
+    {
+      "index": 29,
+      "file": "telemetry_00029.jsonl",
+      "events": 100,
+      "sha256": "e6f7621c7464f94f273914f30f4ff593d78b47076f162681a0d295255efe50c2"
+    },
+    {
+      "index": 30,
+      "file": "telemetry_00030.jsonl",
+      "events": 100,
+      "sha256": "b973734a36fdd9a8ab761ecd97390aeeefa3b4e9fc1b33c75287e44bce10f987"
+    },
+    {
+      "index": 31,
+      "file": "telemetry_00031.jsonl",
+      "events": 100,
+      "sha256": "5fb1a569ba05e3774e279f73c3bdc5a4d418d3f4cc0ccd13d8da40c4c4a46ea3"
+    },
+    {
+      "index": 32,
+      "file": "telemetry_00032.jsonl",
+      "events": 100,
+      "sha256": "19c84cf22d9109752003db0d1fa336ad23c4c3743af4bfc9ddf6c08d724e859e"
+    },
+    {
+      "index": 33,
+      "file": "telemetry_00033.jsonl",
+      "events": 100,
+      "sha256": "99ffb48383e2dae14bf1b2dcffd375507efab83a494fa2a68f27bab31dc73654"
+    },
+    {
+      "index": 34,
+      "file": "telemetry_00034.jsonl",
+      "events": 100,
+      "sha256": "ac27b5e145d6d8cba581130cd4922afd07140d05fd9ca8a76d9003438bf46490"
+    },
+    {
+      "index": 35,
+      "file": "telemetry_00035.jsonl",
+      "events": 100,
+      "sha256": "f4f78641f8e1d7cd46d8fd98b6e49ce41d991ba55beaf28eabb388392b4d02e0"
+    },
+    {
+      "index": 36,
+      "file": "telemetry_00036.jsonl",
+      "events": 100,
+      "sha256": "ca02c4954bfe164b93a4dd0c6ae73a4a20d034bc11bc6948f37cedf60ac699b5"
+    },
+    {
+      "index": 37,
+      "file": "telemetry_00037.jsonl",
+      "events": 100,
+      "sha256": "1c6b8046fa604dbf2544a3b9bda8fe186824eb7cb5c80b30fbafc087e3d003ba"
+    },
+    {
+      "index": 38,
+      "file": "telemetry_00038.jsonl",
+      "events": 100,
+      "sha256": "7762fe22a08602e071d3b0031668bd3858a102cc7bfece8ef6af35aefef61705"
+    },
+    {
+      "index": 39,
+      "file": "telemetry_00039.jsonl",
+      "events": 100,
+      "sha256": "8aa367880bf74fcd0359491fa6acfd790c23a21f182e74e6e1e577a48d702af9"
+    },
+    {
+      "index": 40,
+      "file": "telemetry_00040.jsonl",
+      "events": 100,
+      "sha256": "d9ea55623a803e85ae9394843ece387bcd350a804e5f3a90778a6e399b68127c"
+    },
+    {
+      "index": 41,
+      "file": "telemetry_00041.jsonl",
+      "events": 100,
+      "sha256": "7ec5441867bc277c6a4bd20b317658a4e108fa09cf0478e85028b337a841a4b6"
+    },
+    {
+      "index": 42,
+      "file": "telemetry_00042.jsonl",
+      "events": 100,
+      "sha256": "bf8bf3c4ecdd898abb3e5434e31fbe4231598f98f88f98fd2b234698261db6b7"
+    },
+    {
+      "index": 43,
+      "file": "telemetry_00043.jsonl",
+      "events": 100,
+      "sha256": "68f528107367c12fa068de327200f30221c4fce8b16ba3cccadf003e820f062b"
+    },
+    {
+      "index": 44,
+      "file": "telemetry_00044.jsonl",
+      "events": 100,
+      "sha256": "e88d1fe0547f93cc793f2cb2ca54cd099f883c3a1ab6641ca7dfd6416aa4fa15"
+    },
+    {
+      "index": 45,
+      "file": "telemetry_00045.jsonl",
+      "events": 100,
+      "sha256": "3100f11e68c7a58a70cac605006facceaf37bef700efbb29c7dcf6d9edde69d9"
+    },
+    {
+      "index": 46,
+      "file": "telemetry_00046.jsonl",
+      "events": 100,
+      "sha256": "4ed79fa3089495fc3184eceaf5324e846ac694e438c1e2f91ca4c8e6f4f3f8e4"
+    },
+    {
+      "index": 47,
+      "file": "telemetry_00047.jsonl",
+      "events": 100,
+      "sha256": "2c51be1ae6a62fb45371c7d6d9ca62821edd08165c86653ebcecc073ab0d81dd"
+    }
+  ]
+}

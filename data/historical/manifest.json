@@ -1,0 +1,12 @@
+{
+  "status": "completed",
+  "vehicles": 3,
+  "duration_hours": 1,
+  "interval_seconds": 30,
+  "events_per_vehicle": 120,
+  "total_events": 360,
+  "chunk_size": 100,
+  "chunks": 4,
+  "seed": 42,
+  "start_utc": "2026-10-25T01:17:42Z"
+}
