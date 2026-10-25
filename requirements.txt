@@ -4,9 +4,10 @@ jsonschema>=4.23,<5
 # Azure Event Hubs - Python producer
 azure-eventhub>=5.12,<6
 
-# Azure Storage - ADLS Gen2 access
+# Azure Storage - Blob and ADLS Gen2 access
+azure-storage-blob>=12.31,<13
 azure-storage-file-datalake>=12.18,<13
-azure-identity>=1.19,<2
+azure-identity>=1.26,<2
 
 # Environment variables and local configuration
 python-dotenv>=1.0,<2
