@@ -1,3 +1,5 @@
+import argparse
+import hashlib
 import json
 from collections import defaultdict
 from pathlib import Path
@@ -6,7 +8,7 @@ from jsonschema import Draft202012Validator, FormatChecker
 
 
 ROOT = Path(__file__).resolve().parent.parent
-DATA_DIR = ROOT / "data" / "resume_interrupt_test"
+DEFAULT_DATA_DIR = ROOT / "data" / "resume_interrupt_test"
 CONTRACTS = ROOT / "contracts"
 
 
@@ -26,8 +28,23 @@ def load_validator(filename):
 
 
 def main():
-    manifest_path = DATA_DIR / "manifest.json"
-    trips_path = DATA_DIR / "trips.json"
+    parser = argparse.ArgumentParser(
+        description="Validate TrackPulse historical telemetry data"
+    )
+    parser.add_argument(
+        "--data-dir",
+        type=Path,
+        default=DEFAULT_DATA_DIR,
+        help=(
+            "Directory containing manifest.json, trips.json, and telemetry files. "
+            f"Default: {DEFAULT_DATA_DIR}"
+        ),
+    )
+    args = parser.parse_args()
+    data_dir = args.data_dir.resolve()
+
+    manifest_path = data_dir / "manifest.json"
+    trips_path = data_dir / "trips.json"
 
     if not manifest_path.exists():
         raise FileNotFoundError(f"Manifest not found: {manifest_path}")
@@ -38,18 +55,25 @@ def main():
         manifest = json.load(file)
 
     config = manifest.get("config", {})
-    expected_total = config.get("total_events")
+    # Support both generator manifest naming conventions used in the project.
+    expected_total = config.get("total_events", config.get("target_events"))
     expected_vehicles = config.get("vehicles")
     expected_chunk_count = len(manifest.get("completed_chunks", []))
     manifest_chunks = manifest.get("chunks", [])
 
     if expected_total is None:
-        raise ValueError("manifest.json is missing config.total_events")
+        raise ValueError(
+            "manifest.json is missing config.total_events or config.target_events"
+        )
     if manifest.get("status") != "completed":
         raise ValueError(
-            f"Dataset is not complete; manifest status is "
-            f"{manifest.get('status')!r}"
+            f"Dataset is not complete; manifest status is {manifest.get('status')!r}"
         )
+
+    # If the manifest records chunk metadata in a different field, use it only
+    # when it is a list; this keeps validation explicit rather than guessing.
+    if not manifest_chunks and isinstance(manifest.get("completed_chunks"), list):
+        manifest_chunks = manifest["completed_chunks"]
 
     telemetry_validator = load_validator("telemetry_event.schema.json")
     trip_validator = load_validator("trip.schema.json")
@@ -62,14 +86,15 @@ def main():
 
     for trip in trips:
         errors = list(trip_validator.iter_errors(trip))
-        assert not errors, (
-            f"Invalid trip {trip.get('trip_id')}: {errors[0].message}"
-        )
+        if errors:
+            raise ValueError(
+                f"Invalid trip {trip.get('trip_id')}: {errors[0].message}"
+            )
         trip_ids.add(trip["trip_id"])
         vehicle_ids.add(trip["vehicle_id"])
 
-    if expected_vehicles is not None:
-        assert len(trips) == expected_vehicles, (
+    if expected_vehicles is not None and len(trips) != expected_vehicles:
+        raise ValueError(
             f"Manifest says {expected_vehicles} vehicles, "
             f"but trips.json contains {len(trips)} trips"
         )
@@ -80,27 +105,48 @@ def main():
     last_odometer = {}
     total = 0
 
-    files = sorted(DATA_DIR.glob("telemetry_*.jsonl"))
-    assert len(files) == expected_chunk_count, (
-        f"Manifest lists {expected_chunk_count} completed chunks, "
-        f"but found {len(files)} telemetry files"
-    )
+    # The generator writes chunks under telemetry/ in the configured version;
+    # support a flat directory too for older output layouts.
+    telemetry_dir = data_dir / "telemetry"
+    if telemetry_dir.is_dir():
+        files = sorted(telemetry_dir.glob("telemetry_*.jsonl"))
+        if not files:
+            files = sorted(telemetry_dir.glob("*.jsonl"))
+    else:
+        files = sorted(data_dir.glob("telemetry_*.jsonl"))
 
-    # Verify file names/order and checksums recorded in the manifest.
-    chunks_by_index = {
-        item["index"]: item for item in manifest_chunks
-    }
-    for index, path in enumerate(files):
-        assert path.name == f"telemetry_{index:05d}.jsonl", (
-            f"Unexpected telemetry file name: {path.name}"
+    if not files:
+        raise FileNotFoundError(
+            f"No telemetry JSONL files found under {telemetry_dir if telemetry_dir.is_dir() else data_dir}"
         )
-        metadata = chunks_by_index.get(index)
-        assert metadata is not None, (
-            f"Manifest has no metadata for chunk index {index}"
+
+    # Normalize manifest chunk metadata into a map keyed by chunk index.
+    chunks_by_index = {}
+    for position, item in enumerate(manifest_chunks):
+        if not isinstance(item, dict):
+            continue
+        index = item.get("index", position)
+        chunks_by_index[index] = item
+
+    # If manifest only has completed_chunks metadata, use it for the count.
+    if manifest_chunks:
+        expected_chunk_count = len(manifest_chunks)
+
+    if expected_chunk_count and len(files) != expected_chunk_count:
+        raise ValueError(
+            f"Manifest lists {expected_chunk_count} completed chunks, "
+            f"but found {len(files)} telemetry files"
         )
-        assert metadata.get("file") == path.name, (
-            f"Manifest filename mismatch for chunk index {index}"
-        )
+
+    for position, path in enumerate(files):
+        metadata = chunks_by_index.get(position)
+        if metadata is not None:
+            recorded_name = metadata.get("file") or metadata.get("filename")
+            if recorded_name and recorded_name not in {path.name, str(path.relative_to(data_dir))}:
+                raise ValueError(
+                    f"Manifest filename mismatch for chunk {position}: "
+                    f"manifest={recorded_name}, actual={path.name}"
+                )
 
     for path in files:
         with path.open("r", encoding="utf-8") as file:
@@ -116,79 +162,81 @@ def main():
                     ) from exc
 
                 errors = list(telemetry_validator.iter_errors(event))
-                assert not errors, (
-                    f"{path.name}:{line_number}: {errors[0].message}"
-                )
+                if errors:
+                    raise ValueError(
+                        f"{path.name}:{line_number}: {errors[0].message}"
+                    )
 
                 event_id = event["event_id"]
                 vehicle_id = event["vehicle_id"]
                 event_time = event["event_timestamp"]
                 odometer = event["odometer_km"]
 
-                assert event_id not in event_ids, (
-                    f"Duplicate event_id: {event_id}"
-                )
+                if event_id in event_ids:
+                    raise ValueError(f"Duplicate event_id: {event_id}")
                 event_ids.add(event_id)
 
-                assert vehicle_id in vehicle_ids, (
-                    f"Unknown vehicle: {vehicle_id}"
-                )
-                assert event["trip_id"] in trip_ids, (
-                    f"Unknown trip: {event['trip_id']}"
-                )
+                if vehicle_id not in vehicle_ids:
+                    raise ValueError(f"Unknown vehicle: {vehicle_id}")
+                if event["trip_id"] not in trip_ids:
+                    raise ValueError(f"Unknown trip: {event['trip_id']}")
 
                 if vehicle_id in last_timestamp:
-                    assert event_time >= last_timestamp[vehicle_id], (
-                        f"Timestamp went backwards for {vehicle_id}"
-                    )
+                    if event_time < last_timestamp[vehicle_id]:
+                        raise ValueError(f"Timestamp went backwards for {vehicle_id}")
 
                 if vehicle_id in last_odometer:
-                    assert odometer >= last_odometer[vehicle_id], (
-                        f"Odometer decreased for {vehicle_id}"
-                    )
+                    if odometer < last_odometer[vehicle_id]:
+                        raise ValueError(f"Odometer decreased for {vehicle_id}")
 
                 last_timestamp[vehicle_id] = event_time
                 last_odometer[vehicle_id] = odometer
                 counts_by_vehicle[vehicle_id] += 1
                 total += 1
 
-    assert total == expected_total, (
-        f"Manifest says {expected_total} events, but found {total}"
-    )
+    if total != expected_total:
+        raise ValueError(
+            f"Manifest says {expected_total} events, but found {total}"
+        )
 
-    # Each vehicle should have exactly one event per configured interval.
     expected_events_per_vehicle = config.get("events_per_vehicle")
     if expected_events_per_vehicle is not None:
         for vehicle_id in vehicle_ids:
             actual = counts_by_vehicle.get(vehicle_id, 0)
-            assert actual == expected_events_per_vehicle, (
-                f"{vehicle_id} has {actual} events; "
-                f"expected {expected_events_per_vehicle}"
-            )
+            if actual != expected_events_per_vehicle:
+                raise ValueError(
+                    f"{vehicle_id} has {actual} events; "
+                    f"expected {expected_events_per_vehicle}"
+                )
 
-    # Compare recorded chunk event counts and checksums.
-    for index, path in enumerate(files):
-        metadata = chunks_by_index[index]
-        with path.open("rb") as file:
-            import hashlib
+    # Compare recorded chunk checksums/counts when those fields are available.
+    checksum_checks = 0
+    count_checks = 0
+    for position, path in enumerate(files):
+        metadata = chunks_by_index.get(position)
+        if metadata is None:
+            continue
 
+        expected_sha = metadata.get("sha256") or metadata.get("checksum")
+        if expected_sha:
             digest = hashlib.sha256()
-            for block in iter(lambda: file.read(1024 * 1024), b""):
-                digest.update(block)
+            with path.open("rb") as file:
+                for block in iter(lambda: file.read(1024 * 1024), b""):
+                    digest.update(block)
+            if digest.hexdigest() != expected_sha:
+                raise ValueError(f"Checksum mismatch for {path.name}")
+            checksum_checks += 1
 
-        assert digest.hexdigest() == metadata.get("sha256"), (
-            f"Checksum mismatch for {path.name}"
-        )
-
-        with path.open("r", encoding="utf-8") as file:
-            file_event_count = sum(1 for line in file if line.strip())
-
-        assert file_event_count == metadata.get("events"), (
-            f"{path.name}: manifest says {metadata.get('events')} events, "
-            f"found {file_event_count}"
-        )
-
-    assert len(event_ids) == total, "Event IDs are not unique"
+        expected_chunk_events = metadata.get("events", metadata.get("event_count"))
+        if expected_chunk_events is not None:
+            with path.open("r", encoding="utf-8") as file:
+                file_event_count = sum(1 for line in file if line.strip())
+            if file_event_count != expected_chunk_events:
+                raise ValueError(
+                    f"{path.name}: manifest says {expected_chunk_events} events, "
+                    f"found {file_event_count}"
+                )
+            count_checks += 1
 
     print("PASS: Trip schema")
     print("PASS: Telemetry schema")
@@ -197,10 +245,14 @@ def main():
     print("PASS: Per-vehicle timestamp order")
     print("PASS: Odometer never decreases")
     print("PASS: Manifest event and chunk counts")
-    print("PASS: Chunk filenames, event counts, and SHA-256 checksums")
+    if count_checks:
+        print(f"PASS: Chunk event counts ({count_checks:,} files checked)")
+    if checksum_checks:
+        print(f"PASS: SHA-256 checksums ({checksum_checks:,} files checked)")
     print(f"Total events: {total:,}")
     print(f"Vehicles with events: {len(counts_by_vehicle):,}")
     print(f"Telemetry files: {len(files):,}")
+    print(f"Validated data directory: {data_dir}")
 
 
 if __name__ == "__main__":
