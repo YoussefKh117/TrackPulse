@@ -1,4 +1,4 @@
-﻿# Supply Chain & Intelligent Logistic
+﻿# Supply Chain & Intelligent Logistics
 
 An Azure-based streaming and batch data engineering project.
 
