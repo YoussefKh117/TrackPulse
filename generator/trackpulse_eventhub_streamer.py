@@ -479,6 +479,7 @@ import importlib.util
 import json
 import logging
 import os
+import signal
 import sys
 import threading
 import time
@@ -487,7 +488,7 @@ from pathlib import Path
 from typing import Any
 
 from azure.core.exceptions import ResourceExistsError
-from azure.eventhub import EventData, EventHubProducerClient
+from azure.eventhub import EventData, EventHubProducerClient, TransportType
 from azure.storage.blob import BlobServiceClient, ContentSettings
 from dotenv import load_dotenv
 
@@ -497,9 +498,36 @@ CHECKPOINT_VERSION = 2
 DEFAULT_CHECKPOINT_CONTAINER = "trackpulse-data"
 DEFAULT_CLOUD_CHECKPOINT_BLOB = "checkpoints/producer/stream_checkpoint.json"
 DEFAULT_CLOUD_LOCK_BLOB = "checkpoints/producer/stream_checkpoint.lock"
+TEST_CLOUD_CHECKPOINT_BLOB = "checkpoints/producer/test_stream_checkpoint.json"
+TEST_CLOUD_LOCK_BLOB = "checkpoints/producer/test_stream_checkpoint.lock"
 DEFAULT_SIMULATION_HORIZON_EXTRA_INTERVALS = 100_000
 LEASE_DURATION_SECONDS = 60
 LEASE_RENEW_INTERVAL_SECONDS = 20
+# Producer client transport and resilience defaults
+PRODUCER_IDLE_TIMEOUT = 120          # seconds before recycling an idle AMQP connection
+PRODUCER_AUTH_TIMEOUT = 60           # seconds for the CBS auth handshake
+PRODUCER_RETRY_TOTAL = 5             # total send retries per batch
+PRODUCER_RETRY_BACKOFF_FACTOR = 1.0  # base delay multiplier for exponential backoff
+PRODUCER_RETRY_BACKOFF_MAX = 60      # max delay cap for exponential backoff
+
+_shutdown_requested = threading.Event()
+
+
+def _handle_shutdown_signal(signum: int, frame) -> None:
+    """Signal handler for graceful Ctrl+C shutdown.
+
+    First signal: set the flag; the main loop finishes its current interval and exits.
+    Second signal: raise KeyboardInterrupt for immediate teardown.
+    """
+    if _shutdown_requested.is_set():
+        LOGGER.warning("Second interrupt received \u2014 forcing immediate exit.")
+        raise KeyboardInterrupt
+    LOGGER.warning(
+        "Shutdown requested (signal %s). Finishing the current interval; "
+        "press Ctrl+C again to force an immediate exit.",
+        signum,
+    )
+    _shutdown_requested.set()
 
 
 class CheckpointError(RuntimeError):
@@ -1020,7 +1048,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--batch-size",
         type=int,
-        default=5000,
+        default=500,
         help="Maximum number of events per Event Hubs send batch; service byte limits may flush earlier.",
     )
     parser.add_argument(
@@ -1052,6 +1080,14 @@ def build_parser() -> argparse.ArgumentParser:
         "--cloud-lock-blob",
         default=DEFAULT_CLOUD_LOCK_BLOB,
         help="Blob path used as the renewable single-producer lock.",
+    )
+    parser.add_argument(
+        "--test-mode",
+        action="store_true",
+        help=(
+            "Use an isolated checkpoint and lock to test Event Hubs connectivity without "
+            "modifying the production checkpoint. Allows --max-events to be any positive integer."
+        ),
     )
     parser.add_argument(
         "--validate-only",
@@ -1107,10 +1143,10 @@ def main(argv: list[str] | None = None) -> int:
         parser.error(
             "The local checkpoint mirror cannot overwrite manifest.json or the historical checkpoint.json."
         )
-    if args.max_events and args.max_events % vehicles != 0:
+    if args.max_events and args.max_events % vehicles != 0 and not args.test_mode:
         parser.error(
             f"--max-events must be 0 or a multiple of the vehicle count ({vehicles:,}); "
-            "this prevents stopping inside a fleet interval."
+            "this prevents stopping inside a fleet interval. Use --test-mode for smaller tests."
         )
 
     LOGGER.info("Validated historical data: %s events, %s vehicles, %s-second intervals.",
@@ -1122,6 +1158,16 @@ def main(argv: list[str] | None = None) -> int:
     if args.validate_only:
         LOGGER.info("VALIDATION ONLY: local historical artifacts and generator are valid; no Azure calls or events were sent.")
         return 0
+
+    if args.test_mode:
+        args.cloud_checkpoint_blob = TEST_CLOUD_CHECKPOINT_BLOB
+        args.cloud_lock_blob = TEST_CLOUD_LOCK_BLOB
+        if not args.checkpoint:
+            checkpoint_path = (historical_dir / "stream_checkpoint_test.json").resolve()
+        LOGGER.info(
+            "TEST MODE ACTIVE \u2014 isolated checkpoint: %s/%s",
+            args.checkpoint_container, args.cloud_checkpoint_blob,
+        )
 
     storage_connection = first_non_empty_env("AZURE_STORAGE_CONNECTION_STRING")
     eventhub_connection = first_non_empty_env("EVENT_HUB_CONNECTION_STR", "EVENT_HUB_CONNECTION_STRING")
@@ -1171,6 +1217,9 @@ def main(argv: list[str] | None = None) -> int:
             ) from exc
 
         cloud_checkpoint = read_cloud_checkpoint(checkpoint_blob)
+        if args.test_mode and cloud_checkpoint is not None:
+            LOGGER.info("Test mode: discarding existing test checkpoint; starting fresh from historical state.")
+            cloud_checkpoint = None
         if cloud_checkpoint is None:
             cloud_checkpoint = create_initial_checkpoint(
                 historical_dir=historical_dir,
@@ -1232,9 +1281,37 @@ def main(argv: list[str] | None = None) -> int:
         producer = EventHubProducerClient.from_connection_string(
             conn_str=eventhub_connection,
             eventhub_name=eventhub_name,
+            transport_type=TransportType.AmqpOverWebsocket,
+            retry_total=PRODUCER_RETRY_TOTAL,
+            retry_backoff_factor=PRODUCER_RETRY_BACKOFF_FACTOR,
+            retry_backoff_max=PRODUCER_RETRY_BACKOFF_MAX,
+            idle_timeout=PRODUCER_IDLE_TIMEOUT,
+            auth_timeout=PRODUCER_AUTH_TIMEOUT,
+        )
+        LOGGER.info(
+            "Event Hubs producer: transport=AmqpOverWebsocket, retry_total=%d, idle_timeout=%ds",
+            PRODUCER_RETRY_TOTAL, PRODUCER_IDLE_TIMEOUT,
         )
 
+        # In test mode with max_events < fleet size, send only a subset of vehicles
+        if args.test_mode and args.max_events and args.max_events < vehicles:
+            effective_states = states[:args.max_events]
+            LOGGER.info(
+                "Test mode: sending events for %d of %d vehicles per interval.",
+                len(effective_states), vehicles,
+            )
+        else:
+            effective_states = states
+        effective_vehicle_count = len(effective_states)
+
+        # Install graceful-shutdown signal handler now that all Azure connections are ready
+        if threading.current_thread() is threading.main_thread():
+            signal.signal(signal.SIGINT, _handle_shutdown_signal)
+
         while True:
+            if _shutdown_requested.is_set():
+                LOGGER.info("Graceful shutdown requested; stopping before next interval.")
+                break
             lease_guard.assert_held()
             if args.max_events and run_events_acknowledged >= args.max_events:
                 break
@@ -1243,7 +1320,7 @@ def main(argv: list[str] | None = None) -> int:
             acknowledged = send_fleet_interval(
                 producer=producer,
                 generator=generator_module,
-                states=states,
+                states=effective_states,
                 interval_index=interval_index,
                 start=start,
                 interval_seconds=interval_seconds,
@@ -1252,16 +1329,19 @@ def main(argv: list[str] | None = None) -> int:
                 batch_size=args.batch_size,
                 lease_guard=lease_guard,
             )
-            if acknowledged != vehicles:
-                # Extra guard: never commit a partial fleet interval.
+            if acknowledged != effective_vehicle_count:
                 raise RuntimeError(
-                    f"Interval {interval_index} acknowledged {acknowledged} events; expected {vehicles}."
+                    f"Interval {interval_index} acknowledged {acknowledged} events; "
+                    f"expected {effective_vehicle_count}."
                 )
 
             # The checkpoint advances only after all fleet events were acknowledged by Event Hubs.
             next_interval += 1
             run_events_acknowledged += acknowledged
-            emitted_events_total = (next_interval - historical_next_interval) * vehicles
+            if args.test_mode:
+                emitted_events_total = run_events_acknowledged
+            else:
+                emitted_events_total = (next_interval - historical_next_interval) * vehicles
             cloud_checkpoint = {
                 "version": CHECKPOINT_VERSION,
                 "checkpoint_type": "trackpulse_eventhub_producer",
@@ -1275,9 +1355,12 @@ def main(argv: list[str] | None = None) -> int:
                 "created_at_utc": cloud_checkpoint.get("created_at_utc", utc_now_iso()),
                 "updated_at_utc": utc_now_iso(),
                 "last_completed_interval": interval_index,
-                "last_completed_interval_event_count": vehicles,
+                "last_completed_interval_event_count": effective_vehicle_count,
                 "last_completed_run_id": run_id,
             }
+            if args.test_mode:
+                cloud_checkpoint["test_mode"] = True
+                cloud_checkpoint["effective_vehicles"] = effective_vehicle_count
             # Preserve migration audit fields until an operator has reviewed the checkpoint.
             cloud_checkpoint.update(checkpoint_audit_fields)
 
@@ -1298,9 +1381,12 @@ def main(argv: list[str] | None = None) -> int:
             if args.max_events and run_events_acknowledged >= args.max_events:
                 break
             if args.sleep_seconds:
-                time.sleep(args.sleep_seconds)
+                _shutdown_requested.wait(args.sleep_seconds)
 
-        LOGGER.info("Producer run completed normally.")
+        if _shutdown_requested.is_set():
+            LOGGER.info("Graceful shutdown completed. Last committed checkpoint is authoritative.")
+        else:
+            LOGGER.info("Producer run completed normally.")
 
     except KeyboardInterrupt:
         return_code = 130
@@ -1317,6 +1403,7 @@ def main(argv: list[str] | None = None) -> int:
             exc,
         )
     finally:
+        _shutdown_requested.clear()
         if producer is not None:
             try:
                 producer.close()
