@@ -478,9 +478,7 @@ shipment-level risk logic.
 ## Team
 
 **TrackPulse --- SIC BD** 
-*Youssef Khaled*, 
-,*Salsabel Osama*
-,*Abdelrahman Mohamed*
+*Youssef Khaled*, *Salsabel Osama*, *Abdelrahman Mohamed*
 
 ------------------------------------------------------------------------
 
