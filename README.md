@@ -475,12 +475,7 @@ connectivity/refresh, if used. - Reconciliation of planned versus
 operational trip status and timing. - Cargo-temperature coverage and
 shipment-level risk logic.
 
-## Team
+## Team Members
 
 **TrackPulse --- SIC BD** 
 *Youssef Khaled*, *Salsabel Osama*, *Abdelrahman Mohamed*
-
-------------------------------------------------------------------------
-
-*TrackPulse --- Supply Chain & Intelligent Logistics \| Samsung
-Innovation Campus Graduation Project*
